@@ -1,0 +1,16 @@
+{
+  "name": "iphone-used-price-board",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "苹果二手行情看板：每日自动抓取韩国回收商公开的分等级回收价，并辅助判断二手平台上的商品是否值得收。",
+  "scripts": {
+    "fetch": "node scripts/fetch-prices.mjs",
+    "test": "node --test test/*.test.mjs",
+    "serve": "node scripts/serve.mjs",
+    "build:artifact": "node scripts/build-artifact.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

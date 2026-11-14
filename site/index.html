@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>iPhone 收货行情</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="每日自动更新的苹果二手分级回收行情，按你的利润目标算出收货上限价，并辅助判断二手平台上的商品值不值得收。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&amp;display=swap">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <div class="brand">
+      <h1>iPhone 收货行情</h1>
+      <p class="brand-sub">韩国回收商公开报价 · 分等级 · 每日自动更新</p>
+    </div>
+    <dl class="stamp" id="stamp" aria-live="polite">
+      <div><dt>行情基准日</dt><dd id="stampDate">载入中</dd></div>
+      <div><dt>抓取时间（韩国）</dt><dd id="stampFetched">载入中</dd></div>
+    </dl>
+  </div>
+</header>
+
+<nav class="tabs" aria-label="分页">
+  <div class="wrap tabs-inner" role="tablist">
+    <button type="button" class="tab" role="tab" id="tab-prices" data-tab="prices" aria-controls="panel-prices" aria-selected="true">行情</button>
+    <button type="button" class="tab" role="tab" id="tab-deals" data-tab="deals" aria-controls="panel-deals" aria-selected="false">收货助手</button>
+    <button type="button" class="tab" role="tab" id="tab-guide" data-tab="guide" aria-controls="panel-guide" aria-selected="false">说明</button>
+  </div>
+</nav>
+
+<main class="wrap main">
+  <div id="banners"></div>
+
+  <!-- ============================== 行情 ============================== -->
+  <section class="panel" id="panel-prices" role="tabpanel" aria-labelledby="tab-prices">
+    <div class="toolbar">
+      <div class="field field-wide">
+        <span class="field-label" id="lblSource">行情来源</span>
+        <div class="seg" id="sourceSeg" role="group" aria-labelledby="lblSource"></div>
+      </div>
+      <div class="field">
+        <span class="field-label" id="lblUnit">金额单位</span>
+        <div class="seg" id="unitSeg" role="group" aria-labelledby="lblUnit"></div>
+      </div>
+      <div class="field field-grow">
+        <label class="field-label" for="modelSearch">找机型</label>
+        <input type="search" id="modelSearch" class="input" placeholder="17 pro max、프로맥스、SE" autocomplete="off">
+      </div>
+    </div>
+    <div class="chips" id="seriesChips" role="group" aria-label="按系列筛选"></div>
+    <p class="statusline" id="priceStatus">正在载入今天的行情……</p>
+    <div class="grid" id="modelGrid" aria-live="polite"></div>
+  </section>
+
+  <!-- ============================== 收货助手 ============================== -->
+  <section class="panel" id="panel-deals" role="tabpanel" aria-labelledby="tab-deals" hidden>
+    <section class="block">
+      <h2>我的收货标准</h2>
+      <p class="hint">收货上限价 = 回收价 − 目标利润 − 其他成本。设置只保存在这台设备的浏览器里。</p>
+      <div class="toolbar">
+        <div class="field field-wide">
+          <span class="field-label" id="lblGrade">按哪个等级估价</span>
+          <div class="seg" id="gradeSeg" role="group" aria-labelledby="lblGrade"></div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="targetProfit">每台目标利润（万韩元）</label>
+          <input type="number" id="targetProfit" class="input input-num" inputmode="decimal" min="0" step="0.5">
+        </div>
+        <div class="field">
+          <label class="field-label" for="extraCost">其他成本（万韩元）</label>
+          <input type="number" id="extraCost" class="input input-num" inputmode="decimal" min="0" step="0.5">
+        </div>
+        <div class="field">
+          <label class="field-label" for="krwPerCny">汇率：1 人民币兑韩元</label>
+          <input type="number" id="krwPerCny" class="input input-num" inputmode="decimal" min="0" step="1" placeholder="选填">
+        </div>
+      </div>
+      <p class="hint" id="gradeHint"></p>
+    </section>
+
+    <section class="block">
+      <div class="block-head">
+        <h2>关注机型 · 今日收货上限</h2>
+        <div class="field field-inline">
+          <label class="field-label" for="addWatch">添加机型</label>
+          <select id="addWatch" class="input"></select>
+        </div>
+      </div>
+      <div class="watch" id="watchList"></div>
+
+      <div class="region">
+        <div class="field">
+          <label class="field-label" for="regionInput">当根搜索地区（选填）</label>
+          <div class="input-row">
+            <input type="text" id="regionInput" class="input" placeholder="粘贴当根网页版的搜索网址，或填 역삼동-6035 这样的地区参数" autocomplete="off">
+            <button type="button" class="btn" id="regionAdd">添加地区</button>
+          </div>
+        </div>
+        <div class="chips" id="regionChips" role="group" aria-label="当根搜索地区"></div>
+        <p class="hint" id="regionMsg">不设置时，当根会按你在它网站上选的位置搜索。设置方法见「说明」页。</p>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-head">
+        <h2>粘贴判定</h2>
+        <span class="tag" id="sampleTag">示例（虚构数据）</span>
+      </div>
+      <p class="hint">把二手平台上的标题和价格粘贴进来（一条或一整页都行），自动认机型、容量和成色线索，算出按当前行情能赚多少。</p>
+      <textarea id="pasteBox" class="input paste" rows="7" spellcheck="false" aria-label="粘贴商品标题和价格"></textarea>
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary" id="pasteRun">判定</button>
+        <button type="button" class="btn" id="pasteClear">清空</button>
+        <button type="button" class="btn" id="pasteSample">载入示例</button>
+        <span class="hint" id="pasteSummary"></span>
+      </div>
+      <div class="results" id="pasteResults" aria-live="polite"></div>
+    </section>
+  </section>
+
+  <!-- ============================== 说明 ============================== -->
+  <section class="panel prose" id="panel-guide" role="tabpanel" aria-labelledby="tab-guide" hidden>
+    <section class="block">
+      <h2>行情从哪来，多久更新</h2>
+      <p>行情取自两家韩国回收商在自家网站上公开的回收报价表。程序每天定时读取它们的公开价格页，整理成统一的机型、容量和等级。这是回收商愿意出的收购价，也就是你把机器卖给它们大致能拿到的钱。</p>
+      <div class="table-scroll">
+        <table class="plain" id="sourceTable">
+          <thead><tr><th scope="col">来源</th><th scope="col">等级</th><th scope="col">行情基准日</th><th scope="col">本次抓取</th><th scope="col">条数</th></tr></thead>
+          <tbody><tr><td colspan="5">载入中</td></tr></tbody>
+        </table>
+      </div>
+      <p class="hint">「行情基准日」是来源网站自己标注的日期，它们通常几天调一次价。涨跌标记显示近 7 天内的调价。</p>
+    </section>
+
+    <section class="block">
+      <h2>等级对照</h2>
+      <h3>Space Trade-in（스페이스 트레이드인）</h3>
+      <div class="table-scroll">
+        <table class="plain">
+          <thead><tr><th scope="col">等级</th><th scope="col">判定标准</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">A</th><td>功能正常，外观和屏幕都干净。</td></tr>
+            <tr><th scope="row">B</th><td>功能正常，外观有划痕或磕碰，屏幕干净。</td></tr>
+            <tr><th scope="row">C</th><td>功能正常，电池健康度低于 80%，外观多处磕碰，正面或背面有划痕。</td></tr>
+            <tr><th scope="row">D</th><td>功能故障（摄像头、面容或指纹、振动、Wi-Fi、扬声器、麦克风等），或前后玻璃破损，或屏幕有残影。</td></tr>
+            <tr><th scope="row">E</th><td>功能故障且外观破损，屏幕严重破损或显示不良（亮线、发白、黑点）。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="hint">它另有未拆封、A-、B-（电池低于 85%）、X（不开机、账号锁）几档，但公开的价格表里没有列出价格，所以这里没有「全新未拆封」的行情。</p>
+      <h3>Rediva（리디바）</h3>
+      <div class="table-scroll">
+        <table class="plain">
+          <thead><tr><th scope="col">等级</th><th scope="col">判定标准</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">A</th><td>外观状态优秀，功能正常。</td></tr>
+            <tr><th scope="row">A-</th><td>有轻微使用痕迹，功能正常。</td></tr>
+            <tr><th scope="row">B+</th><td>有明显使用感，功能正常。</td></tr>
+            <tr><th scope="row">B</th><td>有磕碰或轻微残影，功能正常。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="hint">破损和功能故障（C、F 级）它不公开报价，验机后单独报。它收录的机型比 Space Trade-in 少，新机上市后可能晚一些才有报价。</p>
+    </section>
+
+    <section class="block">
+      <h2>配合当根（당근）怎么用</h2>
+      <p>当根的规则不允许程序自动抓取它的搜索结果，所以这里不做自动抓取，改成帮你更快地人工筛选：</p>
+      <ol>
+        <li><strong>设好标准。</strong>在「收货助手」里选估价等级、填目标利润，页面会算出每个机型今天的收货上限价。</li>
+        <li><strong>一键去搜。</strong>点机型右边的「当根」，会打开当根网页版的搜索结果，并带上「只看在售」和价格上限。同一行还有 번개장터 和 중고나라 的搜索入口。</li>
+        <li><strong>粘贴判定。</strong>看到合适的，把标题和价格复制回来粘贴，页面会算出按各等级回收能赚多少。电脑上可以在搜索结果页全选复制，一次判定一整页。</li>
+        <li><strong>开关键词提醒。</strong>在当根 App 里给「아이폰 18 프로맥스」这类关键词开「키워드 알림」，有新商品时 App 会推送，这是当根官方提供的盯货方式。</li>
+      </ol>
+      <h3>怎么指定搜索地区</h3>
+      <p>当根按「一个洞加周边」搜索。在浏览器打开 daangn.com，选好你的位置后随便搜一次，地址栏里会出现 <code>in=역삼동-6035</code> 这样的参数。把整条网址粘贴到「当根搜索地区」里添加即可，可以添加多个地区轮流搜。</p>
+      <p class="hint">价格上限参数是按当根网页版的地址格式拼的。如果当根改版导致它不生效，搜索词仍然有效，只是需要自己在页面上选价格。</p>
+    </section>
+
+    <section class="block">
+      <h2>使用时请留意</h2>
+      <ul>
+        <li>表里是回收商的公开报价，最终成交价以对方验机定级为准，通常会比你自己判断的等级更严。</li>
+        <li>卖家标题里的「S급」「A급」不会被采信；出现屏幕破损、残影、电池低于 80% 等字样时会自动按更低的等级估价。</li>
+        <li>识别靠关键词，可能认错。价格低得反常的商品先核实是否锁机、是否配件、是否诈骗。</li>
+        <li>这里是韩国本地回收商的韩元报价。如果你把机器发回国内出货，韩版机在国内的行情要另外参考，不能直接套用。</li>
+      </ul>
+    </section>
+  </section>
+</main>
+
+<footer class="wrap footer">
+  <p>数据来源：<a href="https://space-tradein.co.kr/sub/price_list.php" target="_blank" rel="noopener noreferrer">space-tradein.co.kr</a>、<a href="https://rediva.ai/price" target="_blank" rel="noopener noreferrer">rediva.ai</a> 的公开回收报价。仅供参考，不构成交易建议。</p>
+</footer>
+
+<script type="module" src="assets/app.js"></script>
+</body>
+</html>

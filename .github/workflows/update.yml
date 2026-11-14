@@ -1,0 +1,96 @@
+name: 更新行情并发布网页
+
+on:
+  schedule:
+    # 韩国时间每天 09:17、13:17、18:17（这里写的是 UTC）
+    - cron: '17 0,4,9 * * *'
+  workflow_dispatch:
+  push:
+    paths:
+      - 'site/**'
+      - 'scripts/**'
+      - 'test/**'
+      - 'package.json'
+      - '.github/workflows/update.yml'
+
+permissions:
+  contents: write # 把当天的行情数据提交回仓库
+  pages: write # 发布 GitHub Pages
+  id-token: write
+
+concurrency:
+  group: update-prices
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: 抓取行情
+    # 定时任务只在默认分支运行；这里再挡掉其他分支的 push
+    if: github.event_name != 'push' || github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: 单元测试
+        run: npm test
+
+      - name: 抓取当日行情
+        id: fetch
+        run: node scripts/fetch-prices.mjs
+
+      # 每天第一次抓取、或价格有变化时才提交；只有抓取时间变了不提交
+      - name: 提交行情数据
+        if: steps.fetch.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site/data
+          if git diff --cached --quiet; then
+            echo "没有需要提交的变化。"
+            exit 0
+          fi
+          git commit -m "数据：$(TZ=Asia/Seoul date +'%Y-%m-%d %H:%M') 行情"
+          git push || { git pull --rebase && git push; }
+
+      - name: 打包网页
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+  deploy:
+    name: 发布网页
+    needs: update
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 检查 GitHub Pages 是否已开启
+        id: pages
+        uses: actions/configure-pages@v5
+        continue-on-error: true
+
+      - name: 发布
+        id: deployment
+        if: steps.pages.outcome == 'success'
+        uses: actions/deploy-pages@v4
+
+      - name: 提示：还没开启 GitHub Pages
+        if: steps.pages.outcome != 'success'
+        run: |
+          echo "::warning title=网页还没有发布::请到仓库 Settings → Pages，把 Build and deployment 的 Source 选成「GitHub Actions」，然后在 Actions 页重新运行本工作流。"
+          {
+            echo "### 网页还没有发布"
+            echo ""
+            echo "行情数据已经更新，但 GitHub Pages 还没有开启。"
+            echo ""
+            echo "1. 打开仓库的 **Settings → Pages**"
+            echo "2. 在 **Build and deployment → Source** 里选择 **GitHub Actions**"
+            echo "3. 回到 **Actions** 页，重新运行「更新行情并发布网页」"
+          } >> "$GITHUB_STEP_SUMMARY"
