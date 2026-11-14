@@ -2,8 +2,8 @@ name: 更新行情并发布网页
 
 on:
   schedule:
-    # 韩国时间每天 09:17、13:17、18:17（这里写的是 UTC）
-    - cron: '17 0,4,9 * * *'
+    # 韩国时间每天 09:17 和 17:17（这里写的是 UTC）
+    - cron: '17 0,8 * * *'
   workflow_dispatch:
   push:
     paths:

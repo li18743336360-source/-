@@ -60,10 +60,15 @@ export function parseModelPage(html) {
 
 /**
  * 抓取全部苹果机型。
- * 返回 { priceDate, entries: [{ sourceName, storage, prices }], warnings }
+ * 返回 { priceDate, entries: [{ sourceName, storage, prices }], warnings, failedNames }
+ *
+ * failedNames 是这次没抓到的机型页（限流、超时等临时故障）；合并时会沿用它们上一次的报价。
+ * 页面已不存在（404）的机型不算在内，它们会从行情里消失。
  */
 export async function fetchAll(get, log = () => {}) {
-  const listHtml = await get(SOURCE.url);
+  // 这个站对请求频率比较敏感（从机房 IP 每秒 1 次就会收到 503），所以放慢到每 2.5 秒一次
+  const pace = { minIntervalMs: 2500 };
+  const listHtml = await get(SOURCE.url, pace);
   const cards = parseModelList(listHtml).filter((card) => card.maker === APPLE_MAKER);
   if (cards.length < 20) {
     throw new Error(`机型列表只解析出 ${cards.length} 个苹果机型，页面结构可能变了`);
@@ -72,27 +77,44 @@ export async function fetchAll(get, log = () => {}) {
   const entries = [];
   const warnings = [];
   const dates = new Map();
-  for (const card of cards) {
-    try {
-      const page = parseModelPage(await get(ORIGIN + card.href));
-      if (!page.rows.length) {
-        warnings.push(`${SOURCE.name}：${card.name} 页面没有解析出价格表`);
-        continue;
+
+  // 抓一批机型页，返回其中临时失败的
+  const fetchCards = async (batch) => {
+    const failed = [];
+    for (const card of batch) {
+      try {
+        const page = parseModelPage(await get(ORIGIN + card.href, pace));
+        if (!page.rows.length) {
+          warnings.push(`${SOURCE.name}：${card.name} 页面没有解析出价格表`);
+          continue;
+        }
+        if (page.priceDate) dates.set(page.priceDate, (dates.get(page.priceDate) || 0) + 1);
+        for (const row of page.rows) {
+          entries.push({ sourceName: card.name, storage: row.storage, prices: row.prices });
+        }
+        log(`  ${card.name}: ${page.rows.map((r) => r.storage).join(' / ')}`);
+      } catch (error) {
+        if (error.permanent) warnings.push(`${SOURCE.name}：${card.name} 的页面已不存在，不再收录`);
+        else failed.push({ card, error });
       }
-      if (page.priceDate) dates.set(page.priceDate, (dates.get(page.priceDate) || 0) + 1);
-      for (const row of page.rows) {
-        entries.push({ sourceName: card.name, storage: row.storage, prices: row.prices });
-      }
-      log(`  ${card.name}: ${page.rows.map((r) => r.storage).join(' / ')}`);
-    } catch (error) {
-      warnings.push(`${SOURCE.name}：${card.name} 抓取失败（${error.message}）`);
     }
+    return failed;
+  };
+
+  let failed = await fetchCards(cards);
+  // 临时失败的在最后再试一轮（大面积失败就不试了，说明对方整体有问题）
+  if (failed.length && failed.length <= cards.length / 3) {
+    log(`  有 ${failed.length} 个机型页没抓到，稍后重试`);
+    failed = await fetchCards(failed.map((f) => f.card));
+  }
+  for (const { card, error } of failed) {
+    warnings.push(`${SOURCE.name}：${card.name} 本次没抓到（${error.message}）`);
   }
 
   if (entries.length < 60) {
-    throw new Error(`只解析出 ${entries.length} 条行情，页面结构可能变了`);
+    throw new Error(`只解析出 ${entries.length} 条行情（${failed.length} 个机型页抓取失败），可能被限流或页面结构变了`);
   }
   // 各页的基准日通常一致；不一致时取出现最多的那个
   const priceDate = [...dates.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || parsePriceDate(listHtml);
-  return { priceDate, entries, warnings };
+  return { priceDate, entries, warnings, failedNames: failed.map((f) => f.card.name) };
 }

@@ -144,6 +144,52 @@ test('某个来源抓取失败：沿用旧数据并标明', () => {
   assert.equal(second.prices.sources.find((s) => s.id === 'rediva').priceDate, '2026-11-12');
 });
 
+test('个别机型页没抓到：沿用上次报价并标记，不产生"行情变了"的提交', () => {
+  const first = buildDataset({
+    results: [{ source: ST, ok: true, priceDate: '2026-11-10', entries: stEntries(), warnings: [] }],
+    previous: null,
+    history: null,
+    now: at('2026-11-14T03:00:00Z'),
+  });
+  // 第二次：「아이폰17 Pro Max」这一页（256 / 512）没抓到，但它的 2T 页和 18 Pro Max 抓到了
+  const partial = stEntries().filter((e) => e.sourceName !== '아이폰17 Pro Max');
+  const second = buildDataset({
+    results: [{ source: ST, ok: true, priceDate: '2026-11-10', entries: partial, warnings: [], failedNames: ['아이폰17 Pro Max'] }],
+    previous: first.prices,
+    history: first.history,
+    now: at('2026-11-14T08:00:00Z'),
+  });
+  const pm17 = second.prices.models.find((m) => m.id === 'iphone-17-pro-max');
+  assert.deepEqual(pm17.storages.map((s) => s.storage), ['256GB', '512GB', '2TB']);
+  assert.deepEqual(pm17.storages[0].prices['space-tradein'], { A: 1320000, B: 1160000 });
+  const meta = second.prices.sources[0];
+  assert.equal(meta.ok, true);
+  assert.deepEqual(meta.staleModels, ['iphone-17-pro-max']);
+  assert.equal(meta.entryCount, 4);
+  assert.equal(isMeaningfulChange(first.prices, second.prices), false);
+  assert.deepEqual(second.history, first.history);
+
+  // 第三次：全部抓到了，标记消失
+  const third = buildDataset({
+    results: [{ source: ST, ok: true, priceDate: '2026-11-10', entries: stEntries(), warnings: [], failedNames: [] }],
+    previous: second.prices,
+    history: second.history,
+    now: at('2026-11-14T09:00:00Z'),
+  });
+  assert.equal(third.prices.sources[0].staleModels, undefined);
+  assert.equal(isMeaningfulChange(second.prices, third.prices), false);
+
+  // 没有上一次数据可沿用时：就是缺着，不报错
+  const fresh = buildDataset({
+    results: [{ source: ST, ok: true, priceDate: '2026-11-10', entries: partial, warnings: [], failedNames: ['아이폰17 Pro Max'] }],
+    previous: null,
+    history: null,
+    now: at('2026-11-14T03:00:00Z'),
+  });
+  assert.deepEqual(fresh.prices.models.find((m) => m.id === 'iphone-17-pro-max').storages.map((s) => s.storage), ['2TB']);
+  assert.equal(fresh.prices.sources[0].staleModels, undefined);
+});
+
 test('--only 跳过的来源：沿用旧数据，不算失败', () => {
   const first = buildDataset({
     results: [

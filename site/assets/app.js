@@ -274,11 +274,15 @@ function renderCard(model, source) {
       return `<tr><th scope="row">${esc(s.storage)}</th>${cells}</tr>`;
     })
     .join('');
+  const stale = source.staleModels?.includes(model.id)
+    ? `<div><span class="flag flag-warn" title="这次更新时来源网站没有响应这个机型的页面">沿用上次报价</span></div>`
+    : '';
   return `<article class="card" data-model="${esc(model.id)}">
     <div class="card-head">
       <div>
         <div class="card-name">${esc(modelName(model))}</div>
         <div class="card-ko" lang="ko">${esc(model.ko)}</div>
+        ${stale}
       </div>
       <button type="button" class="star" data-action="watch" data-value="${esc(model.id)}" aria-pressed="${watched}">${watched ? '★ 已关注' : '☆ 关注'}</button>
     </div>
@@ -322,7 +326,9 @@ function renderGrid() {
   }
   const window = state.data.changeWindowDays || 7;
   const moves = ups || downs ? `近 ${window} 天调价：<b>涨 ${ups} 项，跌 ${downs} 项</b>` : `近 ${window} 天没有调价记录`;
-  $('priceStatus').innerHTML = `单位：<b>${esc(unitLabel())}</b> · ${esc(source.name)} 回收报价 · 显示 ${visible.length} / ${withPrices.length} 个机型 · ${moves}`;
+  const staleCount = source.staleModels?.length || 0;
+  const staleNote = staleCount ? ` · <b>${staleCount} 个机型这次没抓到，沿用上次报价</b>` : '';
+  $('priceStatus').innerHTML = `单位：<b>${esc(unitLabel())}</b> · ${esc(source.name)} 回收报价 · 显示 ${visible.length} / ${withPrices.length} 个机型 · ${moves}${staleNote}`;
 }
 
 // ---------------------------------------------------------------- 收货助手

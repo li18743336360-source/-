@@ -3,6 +3,12 @@
 import { MODELS, MODEL_BY_ID } from '../../site/assets/catalog.js';
 import { resolveSourceModel, makeAdHocModel, storageRank } from '../../site/assets/core.js';
 
+// 数据文件 prices.json 的形状：
+//   sources[]: { id, name, grades, priceDate, fetchedAt, ok, error, entryCount, staleModels? }
+//              staleModels = 本次没抓到、沿用上次报价的机型 id
+//   models[]:  { id, name, ko, series, storages: [{ storage, prices: { 来源id: { 等级: 韩元 } }, change? }] }
+//              change = { 来源id: { 等级: [涨跌额, 调价日] } }，只含近几天调过价的
+
 export const HISTORY_LIMIT = 400; // 每条价格序列最多保留的变动点数
 export const CHANGE_WINDOW_DAYS = 7; // 多少天内的调价在网页上标出涨跌
 
@@ -60,16 +66,22 @@ function emptyHistory() {
   return { schema: 1, points: {} };
 }
 
-const TIME_KEYS = new Set(['generatedAt', 'fetchedAt']);
+/** 上一次数据里的机型 → 目录条目（目录里没有的按临时机型处理） */
+function previousMeta(model) {
+  return MODEL_BY_ID.get(model.id) || { id: model.id, name: model.name, ko: model.ko, series: model.series, storages: null, adHoc: true };
+}
+
+// 这些字段每次抓取都可能不同，但不代表行情变了
+const VOLATILE_KEYS = new Set(['generatedAt', 'fetchedAt', 'staleModels', 'warnings']);
 
 /**
- * 新数据和上一次相比，除了抓取时间之外有没有变化。
+ * 新数据和上一次相比，行情本身有没有变化（忽略抓取时间、"本次没抓到"标记和提示信息）。
  * 自动更新据此决定要不要往仓库提交：同一天内反复抓取、价格没变，就不产生提交；
  * 跨天后 day 字段会变，所以每天至少提交一次。
  */
 export function isMeaningfulChange(previous, next) {
   if (!previous) return true;
-  const content = (prices) => JSON.stringify(prices, (key, value) => (TIME_KEYS.has(key) ? undefined : value));
+  const content = (prices) => JSON.stringify(prices, (key, value) => (VOLATILE_KEYS.has(key) ? undefined : value));
   return content(previous) !== content(next);
 }
 
@@ -138,7 +150,32 @@ export function buildDataset({ results, previous, history, now = new Date() }) {
           if (recordPoint(points, `${row.model.id}|${row.storage}|${grade}`, today, value)) changed++;
         }
       }
-      sources.push({
+
+      // 个别机型页这次没抓到（限流、超时）：沿用这些机型上一次的报价，不让它们从网页上消失
+      const staleModels = [];
+      let carried = 0;
+      if (result.failedNames?.length) {
+        const failedIds = new Set(
+          result.failedNames.map((name) => {
+            const resolved = resolveSourceModel(name);
+            return (resolved.model || makeAdHocModel(resolved.baseName)).id;
+          }),
+        );
+        for (const model of previous?.models || []) {
+          if (!failedIds.has(model.id)) continue;
+          for (const st of model.storages || []) {
+            const old = st.prices?.[source.id];
+            if (!old) continue;
+            const slot = ensure(previousMeta(model), st.storage);
+            if (slot.prices[source.id]) continue; // 同一机型的另一页这次抓到了
+            slot.prices[source.id] = old;
+            carried++;
+            if (!staleModels.includes(model.id)) staleModels.push(model.id);
+          }
+        }
+      }
+
+      const meta = {
         id: source.id,
         name: source.name,
         nameKo: source.nameKo,
@@ -148,8 +185,10 @@ export function buildDataset({ results, previous, history, now = new Date() }) {
         fetchedAt: now.toISOString(),
         ok: true,
         error: null,
-        entryCount: normalized.rows.length,
-      });
+        entryCount: normalized.rows.length + carried,
+      };
+      if (staleModels.length) meta.staleModels = staleModels;
+      sources.push(meta);
       changedNow[source.id] = changed;
     } else {
       // 抓取失败（或本次按 --only 跳过）：沿用上一次的数据；失败的会在网页上标明
@@ -159,8 +198,7 @@ export function buildDataset({ results, previous, history, now = new Date() }) {
         for (const st of model.storages || []) {
           const old = st.prices?.[source.id];
           if (!old) continue;
-          const meta = MODEL_BY_ID.get(model.id) || { id: model.id, name: model.name, ko: model.ko, series: model.series, storages: null, adHoc: true };
-          ensure(meta, st.storage).prices[source.id] = old;
+          ensure(previousMeta(model), st.storage).prices[source.id] = old;
           carried++;
         }
       }
