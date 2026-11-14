@@ -1,6 +1,6 @@
 {
  "schema": 1,
- "generatedAt": "2026-11-14T03:19:28.884Z",
+ "generatedAt": "2026-11-14T03:40:05.395Z",
  "day": "2026-11-14",
  "currency": "KRW",
  "changeWindowDays": 7,
@@ -18,10 +18,10 @@
     "E"
    ],
    "priceDate": "2026-11-10",
-   "fetchedAt": "2026-11-14T03:19:28.884Z",
+   "fetchedAt": "2026-11-14T03:40:05.395Z",
    "ok": true,
    "error": null,
-   "entryCount": 127
+   "entryCount": 114
   },
   {
    "id": "rediva",
@@ -35,7 +35,7 @@
     "B"
    ],
    "priceDate": "2026-11-10",
-   "fetchedAt": "2026-11-14T03:19:28.884Z",
+   "fetchedAt": "2026-11-14T03:40:05.395Z",
    "ok": true,
    "error": null,
    "entryCount": 104
@@ -665,13 +665,6 @@
     {
      "storage": "128GB",
      "prices": {
-      "space-tradein": {
-       "A": 380000,
-       "B": 290000,
-       "C": 179000,
-       "D": 151000,
-       "E": 20000
-      },
       "rediva": {
        "A": 460000,
        "A-": 430000,
@@ -683,13 +676,6 @@
     {
      "storage": "256GB",
      "prices": {
-      "space-tradein": {
-       "A": 480000,
-       "B": 332000,
-       "C": 216000,
-       "D": 201000,
-       "E": 70000
-      },
       "rediva": {
        "A": 580000,
        "A-": 550000,
@@ -701,13 +687,6 @@
     {
      "storage": "512GB",
      "prices": {
-      "space-tradein": {
-       "A": 560000,
-       "B": 340000,
-       "C": 236000,
-       "D": 211000,
-       "E": 80000
-      },
       "rediva": {
        "A": 680000,
        "A-": 650000,
@@ -925,13 +904,6 @@
     {
      "storage": "128GB",
      "prices": {
-      "space-tradein": {
-       "A": 465000,
-       "B": 370000,
-       "C": 310000,
-       "D": 290000,
-       "E": 148000
-      },
       "rediva": {
        "A": 640000,
        "A-": 590000,
@@ -943,13 +915,6 @@
     {
      "storage": "256GB",
      "prices": {
-      "space-tradein": {
-       "A": 532000,
-       "B": 430000,
-       "C": 338000,
-       "D": 330000,
-       "E": 190000
-      },
       "rediva": {
        "A": 720000,
        "A-": 670000,
@@ -961,13 +926,6 @@
     {
      "storage": "512GB",
      "prices": {
-      "space-tradein": {
-       "A": 555000,
-       "B": 440000,
-       "C": 348000,
-       "D": 340000,
-       "E": 205000
-      },
       "rediva": {
        "A": 730000,
        "A-": 680000,
@@ -1061,13 +1019,6 @@
     {
      "storage": "128GB",
      "prices": {
-      "space-tradein": {
-       "A": 482000,
-       "B": 432000,
-       "C": 340000,
-       "D": 327000,
-       "E": 123000
-      },
       "rediva": {
        "A": 620000,
        "A-": 580000,
@@ -1079,13 +1030,6 @@
     {
      "storage": "256GB",
      "prices": {
-      "space-tradein": {
-       "A": 532000,
-       "B": 482000,
-       "C": 392000,
-       "D": 367000,
-       "E": 165000
-      },
       "rediva": {
        "A": 680000,
        "A-": 640000,
@@ -1097,30 +1041,11 @@
     {
      "storage": "512GB",
      "prices": {
-      "space-tradein": {
-       "A": 552000,
-       "B": 502000,
-       "C": 402000,
-       "D": 377000,
-       "E": 182000
-      },
       "rediva": {
        "A": 720000,
        "A-": 680000,
        "B+": 600000,
        "B": 510000
-      }
-     }
-    },
-    {
-     "storage": "1TB",
-     "prices": {
-      "space-tradein": {
-       "A": 582000,
-       "B": 512000,
-       "C": 402000,
-       "D": 382000,
-       "E": 187000
       }
      }
     }
@@ -1259,13 +1184,6 @@
     {
      "storage": "128GB",
      "prices": {
-      "space-tradein": {
-       "A": 530000,
-       "B": 400000,
-       "C": 332000,
-       "D": 303000,
-       "E": 142000
-      },
       "rediva": {
        "A": 570000,
        "A-": 540000,
@@ -1277,13 +1195,6 @@
     {
      "storage": "256GB",
      "prices": {
-      "space-tradein": {
-       "A": 570000,
-       "B": 435000,
-       "C": 340000,
-       "D": 337000,
-       "E": 175000
-      },
       "rediva": {
        "A": 620000,
        "A-": 590000,
@@ -1295,13 +1206,6 @@
     {
      "storage": "512GB",
      "prices": {
-      "space-tradein": {
-       "A": 580000,
-       "B": 440000,
-       "C": 375000,
-       "D": 350000,
-       "E": 185000
-      },
       "rediva": {
        "A": 640000,
        "A-": 610000,
@@ -2512,6 +2416,11 @@
   }
  ],
  "warnings": [
+  "Space Trade-in：아이폰14 Pro 1TB 抓取失败（抓取失败：https://space-tradein.co.kr/price/%EC%95%84%EC%9D%B4%ED%8F%B014-Pro-1TB（HTTP 503 https://space-tradein.co.kr/price/%EC%95%84%EC%9D%B4%ED%8F%B014-Pro-1TB））",
+  "Space Trade-in：아이폰13 PRO MAX 抓取失败（抓取失败：https://space-tradein.co.kr/price/%EC%95%84%EC%9D%B4%ED%8F%B013-PRO-MAX（HTTP 503 https://space-tradein.co.kr/price/%EC%95%84%EC%9D%B4%ED%8F%B013-PRO-MAX））",
+  "Space Trade-in：아이폰16e 抓取失败（抓取失败：https://space-tradein.co.kr/price/%EC%95%84%EC%9D%B4%ED%8F%B016e（HTTP 503 https://space-tradein.co.kr/price/%EC%95%84%EC%9D%B4%ED%8F%B016e））",
+  "Space Trade-in：아이폰15 抓取失败（抓取失败：https://space-tradein.co.kr/price/%EC%95%84%EC%9D%B4%ED%8F%B015（HTTP 503 https://space-tradein.co.kr/price/%EC%95%84%EC%9D%B4%ED%8F%B015））",
+  "Space Trade-in：아이폰14 Pro 抓取失败（抓取失败：https://space-tradein.co.kr/price/%EC%95%84%EC%9D%B4%ED%8F%B014-Pro（HTTP 503 https://space-tradein.co.kr/price/%EC%95%84%EC%9D%B4%ED%8F%B014-Pro））",
   "Space Trade-in：忽略不存在的配置「아이폰13 1T 1TB」"
  ]
 }
