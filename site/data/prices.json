@@ -1,7 +1,7 @@
 {
  "schema": 1,
- "generatedAt": "2026-11-21T16:14:00.962Z",
- "day": "2026-11-22",
+ "generatedAt": "2026-11-22T16:21:28.754Z",
+ "day": "2026-11-23",
  "currency": "KRW",
  "changeWindowDays": 7,
  "sources": [
@@ -18,7 +18,7 @@
     "E"
    ],
    "priceDate": "2026-11-17",
-   "fetchedAt": "2026-11-21T16:14:00.962Z",
+   "fetchedAt": "2026-11-22T16:21:28.754Z",
    "ok": true,
    "error": null,
    "entryCount": 127
@@ -35,7 +35,7 @@
     "B"
    ],
    "priceDate": "2026-11-18",
-   "fetchedAt": "2026-11-21T16:14:00.962Z",
+   "fetchedAt": "2026-11-22T16:21:28.754Z",
    "ok": true,
    "error": null,
    "entryCount": 104
